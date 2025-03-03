@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.3.2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #87CEEB; /* Light blue */
+            text-align: center;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #003366;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        #success-message {
+            opacity: 0;
+            transition: opacity 2s;
+        }
+
+        /* Popup Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .popup input, .popup button {
+            width: 90%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .popup button {
+            background-color: #008080;
+            color: white;
+            cursor: pointer;
+        }
+
+        .popup button:hover {
+            background-color: #006666;
+        }
+
+        .emojis {
+            font-size: 30px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .emojis span {
+            padding: 10px;
+        }
+        
+        .emojis span:hover {
+            background-color: #ddd;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="success-message">Payment Successful! 🎉</h1>
+
+    <!-- Email Entry Popup -->
+    <div id="emailPopup" class="popup">
+        <h3>Enter your email for the receipt</h3>
+        <input type="email" id="emailInput" placeholder="Enter your email">
+        <button onclick="submitEmail()">Submit</button>
+    </div>
+
+    <!-- Customer Satisfaction Popup -->
+    <div id="ratingPopup" class="popup">
+        <h3>Please rate your experience</h3>
+        <div class="emojis">
+            <span onclick="submitRating('😞')">😞</span>
+            <span onclick="submitRating('😐')">😐</span>
+            <span onclick="submitRating('😊')">😊</span>
+        </div>
+    </div>
+
+    <script>
+        function launchConfetti() {
+            let duration = 3 * 1000;
+            let end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 }
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 }
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            })();
+        }
+
+        function startAnimation() {
+            setTimeout(() => {
+                document.getElementById("success-message").style.opacity = 1;
+            }, 500);
+
+            setTimeout(() => {
+                document.getElementById("emailPopup").style.display = "block";
+            }, 2000);
+        }
+
+        function submitEmail() {
+            let email = document.getElementById("emailInput").value;
+            if (!email.includes("@") || !email.includes(".")) {
+                alert("Please enter a valid email.");
+                return;
+            }
+
+            // Send email to the backend for receipt generation
+            fetch('https://backend-fyp-revamped.onrender.com/confirm-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Payment confirmed, receipt sent.') {
+                    document.getElementById("emailPopup").style.display = "none";
+                    document.getElementById("ratingPopup").style.display = "block";
+                }
+            })
+            .catch(err => {
+                alert("Error sending receipt");
+            });
+        }
+
+        function submitRating(rating) {
+            // Send the customer rating to the backend
+            fetch('https://backend-fyp-revamped.onrender.com/store-rating', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rating: rating }),
+            })
+            .then(() => {
+                alert("Thank you for your feedback!");
+                window.location.href = "https://your-checkout-summary-url";  // Redirect to the checkout summary page
+            })
+            .catch(err => {
+                alert("Error submitting your feedback.");
+            });
+        }
+
+        // Start the animation sequence
+        launchConfetti();
+        startAnimation();
+    </script>
+
+</body>
+</html>

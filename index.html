@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Summary</title>
+    <style>
+        body {
+            background-color: #f0f2f5; /* Light Gray Background */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            width: 90%;  /* Increased width */
+            max-width: 1200px; /* Maximum limit for large screens */
+            height: 80vh; /* Increased height */
+            overflow-y: auto; /* Enable scrolling if content exceeds */
+        }
+
+        .logo {
+            width: 100px; /* Adjusted size */
+            height: auto;
+            margin-bottom: 5px;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        th {
+            background-color: #f9f9f9;
+        }
+
+        .delete-btn {
+            color: red;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+        }
+
+        .checkout-btn {
+            background: #007bff; /* Classy Blue */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin-top: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .checkout-btn:hover {
+            background: #0056b3;
+        }
+
+        .product-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <img src="logo.png" alt="Fast Store Logo" class="logo"> <!-- Logo -->
+    <h2>Fast Store Autonomous Checkout System</h2>
+
+    <div class="container">
+        <h1>Checkout Summary</h1>
+        <table id="product-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Weight (g)</th>
+                    <th>Price (₹)</th>
+                    <th>Freshness</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Product rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout</button>
+    </div>
+
+    <script>
+        const backendURL = "https://backend-fyp-revamped.onrender.com";
+        let eventSource = null;
+
+        function formatClassName(className) {
+            return className.replace(/-/g, "_").replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+        }
+
+        function setupRealtimeUpdates() {
+            if (eventSource) {
+                eventSource.close(); 
+            }
+
+            eventSource = new EventSource(`${backendURL}/stream-products`);
+
+            eventSource.onmessage = function(event) {
+                const products = JSON.parse(event.data);
+                updateProductTable(products);
+            };
+
+            eventSource.onerror = function(error) {
+                console.error("SSE connection error:", error);
+                eventSource.close();
+            };
+        }
+
+        function updateProductTable(products) {
+            const tableBody = document.getElementById("product-table").getElementsByTagName("tbody")[0];
+            tableBody.innerHTML = ""; 
+
+            products.forEach(product => {
+                if (product.weight > 0 && product.price > 0) { 
+                    const formattedClassName = formatClassName(product.name);
+                    const imagePath = `images/${formattedClassName}.jpg`;
+
+                    const row = tableBody.insertRow();
+                    row.innerHTML = ` 
+                        <td>
+                            <img src="${imagePath}" alt="${product.name}" class="product-img">
+                            ${product.name}
+                        </td>
+                        <td>${product.weight.toFixed(2)}</td>
+                        <td>₹${product.price.toFixed(2)}</td>
+                        <td>${product.freshness}</td>
+                        <td><button class="delete-btn" onclick="deleteProduct('${product.name}')">Delete</button></td>
+                    `;
+                }
+            });
+
+            sessionStorage.setItem("products", JSON.stringify(products));
+        }
+
+        async function deleteProduct(name) {
+            try {
+                const response = await fetch(`${backendURL}/product/${name}`, { method: "DELETE" });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Product ${name} deleted`);
+                    setupRealtimeUpdates(); // Refresh products after deletion
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error deleting product:", error);
+            }
+        }
+
+        function goToCheckout() {
+            const products = JSON.parse(sessionStorage.getItem("products")) || [];
+            if (products.length === 0) {
+                alert("No products in your cart!");
+                return;
+            }
+            window.location.href = "checkout_payment.html";
+        }
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.has("reset")) {
+                console.log("Resetting session...");
+                sessionStorage.removeItem("products");
+            }
+
+            setupRealtimeUpdates();
+        };
+    </script>
+</body>
+</html>

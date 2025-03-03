@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Payment</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #008080; /* Teal background */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* White floating box */
+        .checkout-box {
+            background-color: white;
+            color: black;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 350px;
+        }
+
+        /* Timer Display */
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: red;
+            margin-bottom: 10px;
+        }
+
+        /* QR code */
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin-top: 15px;
+            border: 2px solid #008080;
+            border-radius: 8px;
+        }
+
+        /* Button */
+        .confirm-btn {
+            background-color: #008080;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+
+        .confirm-btn:hover {
+            background-color: #006666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-box">
+        <div class="timer">Please pay Within: <span id="countdown">07:00</span></div>
+        
+        <h1>Checkout</h1>
+        <p>Total Payable Amount: <strong id="total-amount">₹0.00</strong></p>
+
+        <div>
+            <h2>UPI Payment</h2>
+            <p>Scan this QR code to pay:</p>
+            <img id="qr-code" class="qr-code" src="https://via.placeholder.com/200" alt="QR Code">
+        </div>
+
+        <button class="confirm-btn" onclick="confirmPayment()">Confirm Payment</button>
+    </div>
+
+    <script>
+        const backendURL = "https://backend-fyp-revamped.onrender.com";
+        const upiID = "karthickdhanaraj286@oksbi"; 
+
+        let countdownTimer;
+        let timeLeft = 7 * 60; // 7 minutes in seconds
+
+        function startCountdown() {
+            countdownTimer = setInterval(() => {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById("countdown").textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeLeft === 0) {
+                    clearInterval(countdownTimer);
+                    alert("Time expired! Redirecting to summary page.");
+                    window.location.href = "index.html";
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        async function fetchTotalAmount() {
+            try {
+                const response = await fetch(`${backendURL}/products`);
+                const products = await response.json();
+                
+                let totalAmount = 0;
+                products.forEach(product => {
+                    totalAmount += parseFloat(product.price) || 0;
+                });
+
+                document.getElementById("total-amount").textContent = `₹${totalAmount.toFixed(2)}`;
+                generateQRCode(totalAmount);
+            } catch (error) {
+                console.error("Error fetching total amount:", error);
+            }
+        }
+
+        function generateQRCode(amount) {
+            const merchantName = "Autonomous Checkout";
+            const txnID = `TXN${Date.now()}`;
+            const qrData = `upi://pay?pa=${upiID}&pn=${merchantName}&mc=123456&tid=${txnID}&am=${amount}&cu=INR`;
+
+            document.getElementById("qr-code").src = 
+                `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+        }
+
+        async function confirmPayment() {
+            // Confirm payment with the backend before redirecting
+            try {
+                const totalAmount = parseFloat(document.getElementById("total-amount").textContent.replace("₹", ""));
+                const response = await fetch(`${backendURL}/confirm-payment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ amount: totalAmount }),
+                });
+                const data = await response.json();
+
+                if (data.message === 'Payment confirmed') {
+                    window.location.href = "payment_success.html";  // Redirect to payment success page
+                } else {
+                    alert("Payment not confirmed. Please try again.");
+                }
+            } catch (error) {
+                console.error("Error confirming payment:", error);
+                alert("Error confirming payment. Please try again.");
+            }
+        }
+
+        window.onload = function() {
+            fetchTotalAmount();
+            startCountdown();
+        };
+    </script>
+
+</body>
+</html>
