@@ -97,8 +97,6 @@
     </div>
 
     <script>
-        const backendURL = "https://backend-fyp-revamped.onrender.com"; 
-
         function launchConfetti() {
             let duration = 3 * 1000;
             let end = Date.now() + duration;
@@ -141,7 +139,7 @@
             }
 
             // Send email to the backend for receipt generation
-            fetch(`${backendURL}/send-receipt`, {
+            fetch('https://backend-fyp-revamped.onrender.com/confirm-payment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,9 +148,11 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.message === 'Receipt sent successfully') {
+                if (data.message === 'Payment confirmed, receipt sent.') {
                     document.getElementById("emailPopup").style.display = "none";
                     document.getElementById("ratingPopup").style.display = "block";
+                } else {
+                    alert("Error processing payment. Please try again.");
                 }
             })
             .catch(err => {
@@ -162,7 +162,7 @@
 
         function submitRating(rating) {
             // Send the customer rating to the backend
-            fetch(`${backendURL}/submit-rating`, {
+            fetch('https://backend-fyp-revamped.onrender.com/submit-rating', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -171,7 +171,7 @@
             })
             .then(() => {
                 alert("Thank you for your feedback!");
-                window.location.href = "index.html";  // Redirect to the checkout summary page
+                window.location.href = "https://your-checkout-summary-url";  // Redirect to checkout summary
             })
             .catch(err => {
                 alert("Error submitting your feedback.");
