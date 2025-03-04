@@ -73,6 +73,13 @@
             background-color: #ddd;
             border-radius: 50%;
         }
+
+        .error-message {
+            color: red;
+            font-size: 18px;
+            display: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +91,7 @@
         <h3>Enter your email for the receipt</h3>
         <input type="email" id="emailInput" placeholder="Enter your email">
         <button onclick="submitEmail()">Submit</button>
+        <p id="emailError" class="error-message">Invalid email. Please try again.</p>
     </div>
 
     <!-- Customer Satisfaction Popup -->
@@ -133,9 +141,14 @@
 
         function submitEmail() {
             let email = document.getElementById("emailInput").value;
-            if (!email.includes("@") || !email.includes(".")) {
-                alert("Please enter a valid email.");
+            let emailError = document.getElementById("emailError");
+
+            // Simple email validation
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                emailError.style.display = "block";
                 return;
+            } else {
+                emailError.style.display = "none";
             }
 
             // Send email to the backend for receipt generation
@@ -148,7 +161,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.message === 'Payment confirmed, receipt sent.') {
+                if (data.redirectUrl) {
                     document.getElementById("emailPopup").style.display = "none";
                     document.getElementById("ratingPopup").style.display = "block";
                 } else {
@@ -156,7 +169,7 @@
                 }
             })
             .catch(err => {
-                alert("Error sending receipt.");
+                alert("Error sending receipt. Please try again.");
             });
         }
 
