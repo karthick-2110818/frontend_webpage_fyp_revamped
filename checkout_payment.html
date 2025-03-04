@@ -80,7 +80,6 @@
     </div>
 
     <script>
-        const backendURL = "https://backend-fyp-revamped.onrender.com";
         const upiID = "karthickdhanaraj286@oksbi"; 
 
         let countdownTimer;
@@ -102,21 +101,16 @@
             }, 1000);
         }
 
-        async function fetchTotalAmount() {
-            try {
-                const response = await fetch(`${backendURL}/products`);
-                const products = await response.json();
-                
-                let totalAmount = 0;
-                products.forEach(product => {
-                    totalAmount += parseFloat(product.price) || 0;
-                });
+        function fetchTotalAmount() {
+            const products = JSON.parse(sessionStorage.getItem("products")) || [];
 
-                document.getElementById("total-amount").textContent = `₹${totalAmount.toFixed(2)}`;
-                generateQRCode(totalAmount);
-            } catch (error) {
-                console.error("Error fetching total amount:", error);
-            }
+            let totalAmount = 0;
+            products.forEach(product => {
+                totalAmount += parseFloat(product.price) || 0;
+            });
+
+            document.getElementById("total-amount").textContent = `₹${totalAmount.toFixed(2)}`;
+            generateQRCode(totalAmount);
         }
 
         function generateQRCode(amount) {
@@ -128,28 +122,9 @@
                 `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
         }
 
-        async function confirmPayment() {
-            // Confirm payment with the backend before redirecting
-            try {
-                const totalAmount = parseFloat(document.getElementById("total-amount").textContent.replace("₹", ""));
-                const response = await fetch(`${backendURL}/confirm-payment`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ amount: totalAmount }),
-                });
-                const data = await response.json();
-
-                if (data.message === 'Payment confirmed') {
-                    window.location.href = "payment_success.html";  // Redirect to payment success page
-                } else {
-                    alert("Payment not confirmed. Please try again.");
-                }
-            } catch (error) {
-                console.error("Error confirming payment:", error);
-                alert("Error confirming payment. Please try again.");
-            }
+        function confirmPayment() {
+            // Redirect to success page immediately
+            window.location.href = "payment_success.html";
         }
 
         window.onload = function() {
