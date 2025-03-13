@@ -129,21 +129,14 @@
             })();
         }
 
-        function startAnimation() {
-            setTimeout(() => {
-                document.getElementById("success-message").style.opacity = 1;
-            }, 500);
-
-            setTimeout(() => {
-                document.getElementById("emailPopup").style.display = "block";
-            }, 2000);
+        function startProcess() {
+            document.getElementById("emailPopup").style.display = "block"; // Step 1: Ask for email
         }
 
         function submitEmail() {
             let email = document.getElementById("emailInput").value;
             let emailError = document.getElementById("emailError");
 
-            // Simple email validation
             if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                 emailError.style.display = "block";
                 return;
@@ -151,19 +144,16 @@
                 emailError.style.display = "none";
             }
 
-            // Send email to the backend for receipt generation
             fetch('https://backend-fyp-revamped.onrender.com/confirm-payment', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email }),
             })
             .then(response => response.json())
             .then(data => {
                 if (data.redirectUrl) {
                     document.getElementById("emailPopup").style.display = "none";
-                    document.getElementById("ratingPopup").style.display = "block";
+                    document.getElementById("ratingPopup").style.display = "block"; // Step 2: Ask for rating
                 } else {
                     alert("Error processing payment. Please try again.");
                 }
@@ -174,26 +164,27 @@
         }
 
         function submitRating(rating) {
-            // Send the customer rating to the backend
             fetch('https://backend-fyp-revamped.onrender.com/submit-rating', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rating: rating }),
             })
             .then(() => {
-                alert("Thank you for your feedback!");
-                window.location.href = "https://karthick-2110818.github.io/frontend_webpage_fyp_revamped/";  // Redirect to checkout summary
+                document.getElementById("ratingPopup").style.display = "none"; 
+                document.getElementById("success-message").style.opacity = 1; // Step 3: Show success message
+                launchConfetti();  // 🎉 Confetti AFTER success message!
+                
+                setTimeout(() => {
+                    window.location.href = "https://karthick-2110818.github.io/frontend_webpage_fyp_revamped/";
+                }, 3000);  // Redirect after 3s
             })
             .catch(err => {
                 alert("Error submitting your feedback.");
             });
         }
 
-        // Start the animation sequence
-        launchConfetti();
-        startAnimation();
+        // Start process when page loads
+        startProcess();
     </script>
 
 </body>
